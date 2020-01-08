@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using LibraryApp.Data;
 using LibraryApp.Models;
+using LibraryApp.ViewModels;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace LibraryApp.Controllers
 {
@@ -22,7 +24,20 @@ namespace LibraryApp.Controllers
         // GET: Books
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Books.ToListAsync());
+            var books = await GetAllBooksWithDetails()
+                .AsNoTracking()
+                .ToListAsync();
+
+
+            return View(books);
+        }
+
+        private IQueryable<Book> GetAllBooksWithDetails()
+        {
+            return _context.Books
+                .Include(b => b.BookAuthors)
+                .ThenInclude(ba => ba.Author)
+                .Include(b => b.Genres);
         }
 
         // GET: Books/Details/5
@@ -33,7 +48,8 @@ namespace LibraryApp.Controllers
                 return NotFound();
             }
 
-            var book = await _context.Books
+            var book = await GetAllBooksWithDetails()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (book == null)
             {
@@ -73,12 +89,17 @@ namespace LibraryApp.Controllers
                 return NotFound();
             }
 
-            var book = await _context.Books.FindAsync(id);
+            var book = await GetAllBooksWithDetails()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == id);
+            var authors = await _context.Authors.Select(a => new SelectListItem($"{a.FirstName} {a.LastName}", $"{a.FirstName} {a.LastName}")).ToListAsync();
+            var model = new EditBook {Book = book, AllAuthors = authors, BookAuthors = book.BookAuthors.Select(b => $"{b.Author.FirstName} {b.Author.LastName}").ToList()};
+
             if (book == null)
             {
                 return NotFound();
             }
-            return View(book);
+            return View(model);
         }
 
         // POST: Books/Edit/5
@@ -124,7 +145,8 @@ namespace LibraryApp.Controllers
                 return NotFound();
             }
 
-            var book = await _context.Books
+            var book = await GetAllBooksWithDetails()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (book == null)
             {
