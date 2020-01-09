@@ -32,12 +32,12 @@
                 <a asp-action="Edit" asp-route-id="@item.Id"><i class="fas fa-pen"></i></a>
             </td>
             <td>
-                @foreach (var bookAuthor in item.BookAuthors)
-                {
-                    @Html.DisplayFor(modelItem => bookAuthor.Author.FirstName)
-                    @Html.DisplayFor(modelItem => bookAuthor.Author.LastName)
-                }
-
+                <ul>
+                    @foreach (var bookAuthor in item.BookAuthors)
+                    {
+                        <li>@bookAuthor.Author.FirstName @bookAuthor.Author.LastName</li>
+                    }
+                </ul>
             </td>
             <td>
                 <ul>

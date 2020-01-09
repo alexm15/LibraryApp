@@ -60,9 +60,10 @@ namespace LibraryApp.Controllers
         }
 
         // GET: Books/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            return View();
+            var createModel = await NewEditBookViewModel();
+            return View(createModel);
         }
 
         // POST: Books/Create
@@ -70,15 +71,23 @@ namespace LibraryApp.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title")] Book book)
+        public async Task<IActionResult> Create(EditBookViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid) return View(model);
+            
+            var book = new Book
             {
-                _context.Add(book);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            return View(book);
+                Title = model.Title,
+                BookAuthors =
+                    new List<BookAuthor>(model.SelectedAuthors.Select(a => new BookAuthor
+                        {AuthorId = a, BookId = model.Id})),
+                Genres = new List<GenreEntry>(model.SelectedGenres.Select(g => new GenreEntry
+                    {GenreName = g, BookId = model.Id}))
+            };
+            _context.Add(book);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+
         }
 
         // GET: Books/Edit/5
@@ -92,14 +101,37 @@ namespace LibraryApp.Controllers
             var book = await GetAllBooksWithDetails()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(b => b.Id == id);
-            var authors = await _context.Authors.Select(a => new SelectListItem($"{a.FirstName} {a.LastName}", $"{a.FirstName} {a.LastName}")).ToListAsync();
-            var model = new EditBook {Book = book, AllAuthors = authors, BookAuthors = book.BookAuthors.Select(b => $"{b.Author.FirstName} {b.Author.LastName}").ToList()};
+            return View(await PopulateEditBookViewModel(book));
+        }
 
-            if (book == null)
+        private async Task<EditBookViewModel> PopulateEditBookViewModel(Book book)
+        {
+            var authors = await _context.Authors
+                .Select(a => new SelectListItem($"{a.FirstName} {a.LastName}", a.Id.ToString()))
+                .ToListAsync();
+            var model = new EditBookViewModel
             {
-                return NotFound();
-            }
-            return View(model);
+                Id = book.Id,
+                Title = book.Title,
+                AvailableAuthors = authors,
+                SelectedAuthors = book.BookAuthors.Select(b => b.AuthorId).ToList(),
+                AvailableGenres = await _context.Genres.Select(g => new SelectListItem(g.Name, g.Name)).ToListAsync(),
+                SelectedGenres = book.Genres.Select(b => b.GenreName).ToList()
+            };
+            return model;
+        }
+
+        private async Task<EditBookViewModel> NewEditBookViewModel()
+        {
+            var authors = await _context.Authors
+                .Select(a => new SelectListItem($"{a.FirstName} {a.LastName}", a.Id.ToString()))
+                .ToListAsync();
+            var model = new EditBookViewModel
+            {
+                AvailableAuthors = authors,
+                AvailableGenres = await _context.Genres.Select(g => new SelectListItem(g.Name, g.Name)).ToListAsync(),
+            };
+            return model;
         }
 
         // POST: Books/Edit/5
@@ -107,34 +139,78 @@ namespace LibraryApp.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title")] Book book)
+        public async Task<IActionResult> Edit(EditBookViewModel model)
         {
-            if (id != book.Id)
+            var book = await GetAllBooksWithDetails().FirstOrDefaultAsync(b => b.Id == model.Id);
+            if (book == null)
             {
                 return NotFound();
             }
-
-            if (ModelState.IsValid)
+            try
             {
-                try
+                if (ModelState.IsValid)
                 {
-                    _context.Update(book);
+                    book.Title = model.Title;
+                    UpdateGenres(model.SelectedGenres, book);
+                    UpdateAuthors(model.SelectedAuthors, book);
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!BookExists(book.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
+                
             }
-            return View(book);
+            catch (DbUpdateException e)
+            {
+                //Log the error (uncomment ex variable name and write a log.)
+                ModelState.AddModelError("", "Unable to save changes. " +
+                                             "Try again, and if the problem persists, " +
+                                             "see your system administrator."); 
+                
+            }
+            return View(await PopulateEditBookViewModel(book));
+        }
+
+        private void UpdateAuthors(IEnumerable<int> authorIds, Book book)
+        {
+            var selectedAuthors = new HashSet<int>(authorIds);
+            var bookAuthors = new HashSet<int>(book.BookAuthors.Select(b => b.AuthorId));
+            foreach (var author in _context.Authors)
+            {
+                if (selectedAuthors.Contains(author.Id))
+                {
+                    if (!bookAuthors.Contains(author.Id))
+                    {
+                        book.BookAuthors.Add(new BookAuthor {AuthorId = author.Id, BookId = book.Id});
+                    }
+                }
+                else
+                {
+                    if (!bookAuthors.Contains(author.Id)) continue;
+                    var bookAuthor = book.BookAuthors.FirstOrDefault(b => b.AuthorId.Equals(author.Id));
+                    book.BookAuthors.Remove(bookAuthor);
+                }
+            }
+        }
+
+        private void UpdateGenres(IEnumerable<string> genreNames, Book book)
+        {
+            var selectedGenres = new HashSet<string>(genreNames);
+            var bookGenres = new HashSet<string>(book.Genres.Select(b => b.GenreName));
+            foreach (var genre in _context.Genres)
+            {
+                if (selectedGenres.Contains(genre.Name))
+                {
+                    if (!bookGenres.Contains(genre.Name))
+                    {
+                        book.Genres.Add(new GenreEntry {GenreName = genre.Name, BookId = book.Id});
+                    }
+                }
+                else
+                {
+                    if (!bookGenres.Contains(genre.Name)) continue;
+                    var bookGenre = book.Genres.FirstOrDefault(b => b.GenreName.Equals(genre.Name));
+                    book.Genres.Remove(bookGenre);
+                }
+            }
         }
 
         // GET: Books/Delete/5
