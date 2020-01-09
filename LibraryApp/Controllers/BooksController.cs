@@ -220,7 +220,6 @@ namespace LibraryApp.Controllers
             {
                 return NotFound();
             }
-
             var book = await GetAllBooksWithDetails()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(m => m.Id == id);
@@ -228,7 +227,6 @@ namespace LibraryApp.Controllers
             {
                 return NotFound();
             }
-
             return View(book);
         }
 
@@ -241,11 +239,6 @@ namespace LibraryApp.Controllers
             _context.Books.Remove(book);
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
-        }
-
-        private bool BookExists(int id)
-        {
-            return _context.Books.Any(e => e.Id == id);
         }
     }
 }
