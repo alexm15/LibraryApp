@@ -1,0 +1,36 @@
+﻿@model LibraryApp.Models.Author
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>Author</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            Author Name:
+        </dt>
+        <dd class="col-sm-10">
+            <a asp-action="Edit" asp-route-id="@Model.Id">
+                @Html.DisplayFor(model => model.FirstName) @Html.DisplayFor(model => model.LastName)
+            </a>
+        </dd>
+        <dt class="col-sm-2">
+            Books Written
+        </dt>
+        <dd class="col-sm-10">
+            <ul>
+                @foreach (var book in Model.BooksWritten)
+                {
+                    <li><a asp-controller="Books" asp-action="Details" asp-route-id="@book.BookId">@book.Book.Title</a></li>
+                }
+            </ul>
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>

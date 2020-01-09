@@ -23,7 +23,7 @@
             <ul>
                 @foreach (var bookAuthor in Model.BookAuthors)
                 {
-                    <li>@bookAuthor.Author.FirstName @bookAuthor.Author.LastName</li>
+                    <li><a asp-controller="Authors" asp-action="Details" asp-route-id="@bookAuthor.AuthorId"></a>@bookAuthor.Author.FirstName @bookAuthor.Author.LastName</li>
                 }
             </ul>
         </dd>

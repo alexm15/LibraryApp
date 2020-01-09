@@ -1,0 +1,37 @@
+﻿@model LibraryApp.Models.Genre
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>@Model.Name</h4>
+    <hr />
+    <ul>
+        @foreach (var book in Model.GenreEntries)
+        {
+        <li>
+            @book.Book.Title - By
+            @foreach (var author in book.Book.BookAuthors)
+            {
+                var authorsCount = book.Book.BookAuthors.Count;
+                var fullName = author.Author.FirstName + " " + author.Author.LastName;
+                if (authorsCount > 1 && author != book.Book.BookAuthors.AsEnumerable().ElementAt(authorsCount - 1))
+                {
+                    @fullName @:&
+                }
+                else
+                {
+                    @fullName
+                }
+            }
+        </li>
+        }
+    </ul>
+</div>
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Name">Edit</a> |
+    <a asp-action="Index">Back to List</a>
+</div>

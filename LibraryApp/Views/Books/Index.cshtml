@@ -35,7 +35,9 @@
                 <ul>
                     @foreach (var bookAuthor in item.BookAuthors)
                     {
-                        <li>@bookAuthor.Author.FirstName @bookAuthor.Author.LastName</li>
+                        <li>
+                            <a asp-controller="Authors" asp-action="Details" asp-route-id="@bookAuthor.AuthorId">@bookAuthor.Author.FirstName @bookAuthor.Author.LastName</a>
+                        </li>
                     }
                 </ul>
             </td>
@@ -43,7 +45,7 @@
                 <ul>
                     @foreach (var genre in item.Genres)
                     {
-                    <li>@genre.GenreName</li>
+                    <li><a asp-controller="Genres" asp-action="Details" asp-route-name="@genre.GenreName">@genre.GenreName</a></li>
                     }
                 </ul>
             </td>
