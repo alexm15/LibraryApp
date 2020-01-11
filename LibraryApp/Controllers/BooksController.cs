@@ -40,8 +40,9 @@ namespace LibraryApp.Controllers
         {
             return _context.Books
                 .Include(b => b.BookAuthors)
-                .ThenInclude(ba => ba.Author)
-                .Include(b => b.Genres);
+                    .ThenInclude(ba => ba.Author)
+                .Include(b => b.Genres)
+                    .ThenInclude(g => g.Genre);
         }
 
         // GET: Books/Details/5
