@@ -9,6 +9,12 @@
 <p>
     <a asp-action="Create" class="btn btn-success"><i class="fas fa-plus"></i> Add Book</a>
 </p>
+<form asp-action="Index" method="get">
+    <div class="form-group">
+        <input type="text" name="searchTerm" placeholder="Search For Book" value="@ViewData["SearchTerm"]"/>
+        <input type="submit" value="Search"/>
+    </div>
+</form>
 <table class="table">
     <thead>
         <tr>

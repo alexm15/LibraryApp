@@ -22,14 +22,18 @@ namespace LibraryApp.Controllers
         }
 
         // GET: Books
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchTerm = null)
         {
-            var books = await GetAllBooksWithDetails()
-                .AsNoTracking()
-                .ToListAsync();
+            var books = GetAllBooksWithDetails()
+                .AsNoTracking();
 
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                books = books.Where(b => b.Title.Contains(searchTerm));
+                ViewData["SearchTerm"] = searchTerm;
+            }
 
-            return View(books);
+            return View(await books.ToListAsync());
         }
 
         private IQueryable<Book> GetAllBooksWithDetails()
